@@ -33,7 +33,7 @@ public class WhatsAppWebhookController {
     private final BusinessProfileRepository businessProfileRepository;
     private final ConversationService conversationService;
 
-    @Value("${app.twilio.whatsapp-number}")
+    @Value("${app.twilio.whatsapp-number:}")
     private String twilioNumber;
 
     public WhatsAppWebhookController(BusinessProfileRepository businessProfileRepository,
