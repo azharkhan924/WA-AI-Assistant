@@ -1,0 +1,9 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "chromium"]
+
+[env]
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
+
+[start]
+cmd = "node gateway.js"

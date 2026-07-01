@@ -8,8 +8,8 @@ const axios = require('axios');
 const path = require('path');
 const cors = require('cors');
 
-const PORT = 8083;
-const BACKEND_URL = 'http://localhost:8082/api/webhook/whatsapp';
+const PORT = process.env.PORT || 8083;
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8082/api/webhook/whatsapp';
 
 const app = express();
 app.use(cors());
@@ -79,6 +79,7 @@ function createClient() {
     }),
     puppeteer: {
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',

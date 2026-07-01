@@ -469,8 +469,16 @@
             </div>
           </div>
           
-          <div style="max-width: 400px; margin: 2rem auto 0; display: flex; flex-direction: column; gap: 1rem;">
+          <div style="max-width: 440px; margin: 2rem auto 0; display: flex; flex-direction: column; gap: 1rem;">
             <div class="card" style="text-align: center; padding: 2rem;">
+              <div style="margin-bottom: 1.5rem; text-align: left; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+                <label style="font-size: 11px; color: var(--muted); font-weight: 600; display: block; margin-bottom: 6px; letter-spacing: 0.5px;">WHATSAPP GATEWAY URL</label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="gateway-url-input" placeholder="http://localhost:8083 or Railway Gateway URL" style="flex: 1; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 12px; font-family: monospace;">
+                  <button class="btn btn-outline" onclick="updateGatewayUrl()" style="padding: 7px 12px; font-size: 12px;">Set & Connect</button>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.4;">If running the Gateway on Railway as a separate service, paste its URL here.</div>
+              </div>
               <h3 style="margin-top:0">Link WhatsApp Account</h3>
               <div id="qr-stage" style="aspect-ratio: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; margin: 1.5rem 0;">
                 <div id="qr-placeholder" style="font-family: monospace; font-size: 13px; color: var(--muted); padding: 20px;">
@@ -1071,10 +1079,29 @@ function showSection(name) {
 // ════════════════════════════════════════════════════
 // WHATSAPP QR GATEWAY INTEGRATION
 // ════════════════════════════════════════════════════
-const GATEWAY_BASE = 'http://localhost:8083';
+let GATEWAY_BASE = localStorage.getItem('whatsapp_gateway_url') || 'http://localhost:8083';
 let gatewaySocket = null;
 
+function updateGatewayUrl() {
+  const input = document.getElementById('gateway-url-input');
+  if (input) {
+    let url = input.value.trim().replace(/\/$/, '');
+    if (!url) url = 'http://localhost:8083';
+    GATEWAY_BASE = url;
+    localStorage.setItem('whatsapp_gateway_url', GATEWAY_BASE);
+    if (gatewaySocket) {
+      gatewaySocket.disconnect();
+      gatewaySocket = null;
+    }
+    toast('Connecting to Gateway at ' + GATEWAY_BASE, 'info');
+    connectGateway();
+  }
+}
+
 function connectGateway() {
+  const input = document.getElementById('gateway-url-input');
+  if (input && !input.value) input.value = GATEWAY_BASE;
+
   const qrStage = document.getElementById('qr-stage');
   const connMeta = document.getElementById('conn-meta');
   const reconnectBtn = document.getElementById('reconnect-btn');
