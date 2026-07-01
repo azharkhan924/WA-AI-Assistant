@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp AI Assistant — Admin Dashboard</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:   #25D366;
+      --green-d: #128C7E;
+      --green-l: #DCF8C6;
+      --dark:    #0f1117;
+      --card:    #1a1d27;
+      --border:  #2a2d3a;
+      --text:    #e2e8f0;
+      --muted:   #8892a4;
+      --danger:  #ef4444;
+      --accent:  #3b82f6;
+      --radius:  12px;
+      --shadow:  0 4px 24px rgba(0,0,0,.4);
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    a { color: var(--green); text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; }
+    input, select, textarea {
+      font-family: inherit; font-size: .9rem; color: var(--text);
+      background: #252836; border: 1px solid var(--border);
+      border-radius: 8px; padding: .6rem .9rem; width: 100%;
+      outline: none; transition: border .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--green); }
+    textarea { resize: vertical; min-height: 90px; }
+    label { font-size: .8rem; color: var(--muted); display: block; margin-bottom: .3rem; }
+
+    /* ── Layout ───────────────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── Login Screen ─────────────────────────────────────────────────── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      flex: 1; padding: 2rem;
+    }
+    .login-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2.5rem 2rem;
+      width: 100%; max-width: 400px; box-shadow: var(--shadow);
+    }
+    .login-card .logo {
+      text-align: center; margin-bottom: 2rem;
+    }
+    .login-card .logo svg { width: 52px; height: 52px; }
+    .login-card h1 { text-align: center; font-size: 1.4rem; font-weight: 700; }
+    .login-card p { text-align: center; color: var(--muted); margin-top: .3rem; margin-bottom: 1.8rem; font-size: .9rem; }
+    .form-group { margin-bottom: 1rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .65rem 1.2rem; border-radius: 8px; font-size: .88rem;
+      font-weight: 600; border: none; transition: all .2s;
+    }
+    .btn-primary { background: var(--green); color: #000; width: 100%; justify-content: center; }
+    .btn-primary:hover { background: var(--green-d); color: #fff; }
+    .btn-danger  { background: rgba(239,68,68,.15); color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover  { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-sm { padding: .4rem .8rem; font-size: .8rem; }
+    .error-msg { color: var(--danger); font-size: .82rem; margin-top: .5rem; display: none; }
+
+    /* ── Main Shell ───────────────────────────────────────────────────── */
+    #main-shell { display: none; flex-direction: column; flex: 1; }
+    .topbar {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: .85rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar .logo-text {
+      font-weight: 800; font-size: 1.05rem; letter-spacing: -.3px;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .topbar .logo-text span { color: var(--green); }
+    .topbar .badge {
+      background: var(--green); color: #000; border-radius: 999px;
+      font-size: .65rem; font-weight: 700; padding: .15rem .55rem; letter-spacing: .5px;
+    }
+    .topbar .spacer { flex: 1; }
+    .topbar .user-info { font-size: .8rem; color: var(--muted); }
+    .shell-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 220px; background: var(--card); border-right: 1px solid var(--border);
+      padding: 1.2rem .8rem; display: flex; flex-direction: column; gap: .25rem;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: .7rem; padding: .7rem .9rem;
+      border-radius: 8px; font-size: .88rem; cursor: pointer;
+      transition: all .15s; color: var(--muted); border: none; background: none;
+      width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: rgba(37,211,102,.08); color: var(--text); }
+    .nav-item.active { background: rgba(37,211,102,.15); color: var(--green); font-weight: 600; }
+    .nav-icon { font-size: 1.1rem; }
+    .nav-divider { height: 1px; background: var(--border); margin: .5rem .9rem; }
+
+    /* ── Content Area ─────────────────────────────────────────────────── */
+    .content { flex: 1; padding: 2rem; overflow-y: auto; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .section-header h2 { font-size: 1.25rem; font-weight: 700; }
+    .section-header p { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
+
+    /* ── Cards ───────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.4rem; margin-bottom: 1.2rem;
+    }
+    .card h3 { font-size: .95rem; font-weight: 700; margin-bottom: 1rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .save-row { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+    /* ── Toggle Switch ───────────────────────────────────────────────── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem 0;
+    }
+    .toggle-row .label { font-size: .88rem; }
+    .toggle-row .sublabel { font-size: .75rem; color: var(--muted); }
+    .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0; background: #3a3d4e;
+      border-radius: 999px; cursor: pointer; transition: .2s;
+    }
+    .slider::before {
+      content: ''; position: absolute; width: 18px; height: 18px;
+      background: #fff; border-radius: 50%;
+      left: 3px; top: 3px; transition: .2s;
+    }
+    .switch input:checked + .slider { background: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    /* ── List Items (FAQ, Services, Policies) ─────────────────────────── */
+    .list-item {
+      background: #252836; border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem; margin-bottom: .7rem;
+      display: flex; gap: .8rem; align-items: flex-start;
+    }
+    .list-item .item-body { flex: 1; min-width: 0; }
+    .list-item .item-title { font-weight: 600; font-size: .9rem; }
+    .list-item .item-sub { font-size: .8rem; color: var(--muted); margin-top: .25rem; white-space: pre-wrap; }
+    .list-item .item-price {
+      font-size: .75rem; font-weight: 600; color: var(--green);
+      background: rgba(37,211,102,.1); border-radius: 999px;
+      padding: .1rem .55rem; display: inline-block; margin-top: .3rem;
+    }
+    .list-item .item-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+    .empty-state {
+      text-align: center; padding: 2.5rem; color: var(--muted); font-size: .9rem;
+    }
+
+    /* ── Modal ───────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.7); z-index: 200;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); width: 100%; max-width: 520px;
+      padding: 1.8rem; box-shadow: var(--shadow);
+    }
+    .modal h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 1.2rem; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1.3rem; }
+
+    /* ── Chat Preview ──────────────────────────────────────────────────── */
+    .chat-shell {
+      display: flex; flex-direction: column; height: calc(100vh - 140px);
+      background: #0b141a; border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .chat-header {
+      background: #1f2c33; padding: .9rem 1.2rem;
+      display: flex; align-items: center; gap: .8rem;
+    }
+    .chat-header .avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--green); display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 1rem; color: #000;
+    }
+    .chat-header .name { font-weight: 600; font-size: .95rem; }
+    .chat-header .status { font-size: .75rem; color: var(--green); }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 1rem;
+      display: flex; flex-direction: column; gap: .6rem;
+    }
+    .msg {
+      max-width: 72%; border-radius: 10px; padding: .6rem .9rem;
+      font-size: .88rem; line-height: 1.45; white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user {
+      background: #005c4b; color: #fff; align-self: flex-end;
+      border-bottom-right-radius: 3px;
+    }
+    .msg.bot {
+      background: #1f2c33; color: var(--text); align-self: flex-start;
+      border-bottom-left-radius: 3px;
+    }
+    .msg.typing { color: var(--muted); font-style: italic; }
+    .chat-input-row {
+      padding: .8rem 1rem; background: #1f2c33;
+      display: flex; gap: .7rem; align-items: flex-end;
+    }
+    .chat-input-row textarea {
+      flex: 1; border-radius: 20px; min-height: 42px; max-height: 120px;
+      padding: .55rem 1rem; resize: none; background: #2a3942; border: none;
+    }
+    .chat-send {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--green); border: none; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat-send:hover { background: var(--green-d); }
+    .chat-send svg { fill: #000; }
+    .chat-reset {
+      background: none; border: none; color: var(--muted); font-size: .75rem;
+      cursor: pointer; padding: .3rem .6rem; border-radius: 6px;
+    }
+    .chat-reset:hover { color: var(--danger); }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+      background: #1e2532; border: 1px solid var(--border);
+      border-radius: 10px; padding: .8rem 1.2rem;
+      font-size: .85rem; display: none; align-items: center; gap: .6rem;
+      box-shadow: var(--shadow); max-width: 320px;
+    }
+    #toast.show { display: flex; }
+    #toast.success { border-color: var(--green); }
+    #toast.error   { border-color: var(--danger); }
+    #toast .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    #toast.success .dot { background: var(--green); }
+    #toast.error   .dot { background: var(--danger); }
+
+    /* ── Scrollbar ────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3a3d4e; border-radius: 999px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════ LOGIN ══════════ -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="24" fill="#25D366"/>
+          <path d="M24 8C15.163 8 8 15.163 8 24c0 3.04.823 5.888 2.26 8.334L8 40l7.894-2.228A15.916 15.916 0 0024 40c8.837 0 16-7.163 16-16S32.837 8 24 8z" fill="#fff"/>
+          <path d="M31.5 27.682c-.337-.168-2-.986-2.31-1.098-.31-.112-.537-.168-.763.168s-.876 1.097-1.073 1.322c-.197.225-.394.253-.731.084-.337-.168-1.424-.524-2.712-1.672-.502-.449-1.43-1.82-1.43-2.4 0-.112.224-.42.336-.532l.337-.448c.112-.14.112-.253.056-.393l-.93-2.24c-.168-.505-.505-.449-.73-.449h-.505c-.225 0-.59.084-.9.421-.31.337-1.18 1.154-1.18 2.813s1.208 3.263 1.376 3.49c.169.225 2.375 3.63 5.753 5.089 3.378 1.46 3.378.973 3.986.91.608-.064 1.964-.802 2.242-1.576.28-.773.28-1.434.196-1.575-.084-.14-.308-.224-.645-.392z" fill="#25D366"/>
+        </svg>
+      </div>
+      <h1>WhatsApp AI Assistant</h1>
+      <p>Admin Dashboard — sign in to manage your bot</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="admin@business.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <div class="error-msg" id="login-error">Invalid email or password.</div>
+      <button class="btn btn-primary" style="margin-top:.5rem" onclick="doLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- ══════════ MAIN SHELL ══════════ -->
+  <div id="main-shell">
+    <div class="topbar">
+      <div class="logo-text">
+        <svg width="26" height="26" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#25D366"/><path d="M24 8C15.163 8 8 15.163 8 24c0 3.04.823 5.888 2.26 8.334L8 40l7.894-2.228A15.916 15.916 0 0024 40c8.837 0 16-7.163 16-16S32.837 8 24 8z" fill="#fff"/><path d="M31.5 27.682c-.337-.168-2-.986-2.31-1.098-.31-.112-.537-.168-.763.168s-.876 1.097-1.073 1.322c-.197.225-.394.253-.731.084-.337-.168-1.424-.524-2.712-1.672-.502-.449-1.43-1.82-1.43-2.4 0-.112.224-.42.336-.532l.337-.448c.112-.14.112-.253.056-.393l-.93-2.24c-.168-.505-.505-.449-.73-.449h-.505c-.225 0-.59.084-.9.421-.31.337-1.18 1.154-1.18 2.813s1.208 3.263 1.376 3.49c.169.225 2.375 3.63 5.753 5.089 3.378 1.46 3.378.973 3.986.91.608-.064 1.964-.802 2.242-1.576.28-.773.28-1.434.196-1.575-.084-.14-.308-.224-.645-.392z" fill="#25D366"/></svg>
+        WA<span>AI</span>&nbsp;Assistant
+      </div>
+      <span class="badge">ADMIN</span>
+      <div class="spacer"></div>
+      <span class="user-info" id="user-email-display"></span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+
+    <div class="shell-body">
+      <!-- Sidebar -->
+      <nav class="sidebar">
+        <button class="nav-item active" onclick="showSection('profile')">
+          <span class="nav-icon">🏢</span> Business Profile
+        </button>
+        <button class="nav-item" onclick="showSection('services')">
+          <span class="nav-icon">📦</span> Services
+        </button>
+        <button class="nav-item" onclick="showSection('faqs')">
+          <span class="nav-icon">❓</span> FAQs
+        </button>
+        <button class="nav-item" onclick="showSection('policies')">
+          <span class="nav-icon">📋</span> Policies
+        </button>
+        <button class="nav-item" onclick="showSection('whatsapp')">
+          <span class="nav-icon">🟢</span> WhatsApp QR Link
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" onclick="showSection('preview')">
+          <span class="nav-icon">💬</span> Preview Bot
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" onclick="showSection('setup')">
+          <span class="nav-icon">⚙️</span> Setup Guide
+        </button>
+      </nav>
+
+      <!-- Content -->
+      <main class="content">
+
+        <!-- ── Business Profile ── -->
+        <div class="section active" id="section-profile">
+          <div class="section-header">
+            <div>
+              <h2>Business Profile</h2>
+              <p>This information powers the AI's knowledge of your business.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📍 Basic Information</h3>
+            <div class="grid-2">
+              <div class="form-group"><label>Business Name</label><input id="p-name" placeholder="e.g. MealMitra Tiffin Center"/></div>
+              <div class="form-group"><label>Industry</label><input id="p-industry" placeholder="e.g. Food & Beverage"/></div>
+              <div class="form-group"><label>Contact Number</label><input id="p-contact" placeholder="+91 98765 43210"/></div>
+              <div class="form-group"><label>Website</label><input id="p-website" placeholder="https://example.com"/></div>
+              <div class="form-group"><label>WhatsApp Number (Twilio)</label><input id="p-waNumber" placeholder="whatsapp:+14155238886"/></div>
+              <div class="form-group"><label>Address</label><input id="p-address" placeholder="Street, City, State"/></div>
+              <div class="form-group"><label>Working Hours</label><input id="p-hours" placeholder="Mon-Sat 8am-9pm, Sun 10am-6pm"/></div>
+              <div class="form-group"><label>Timezone</label><input id="p-timezone" placeholder="Asia/Kolkata"/></div>
+              <div class="form-group"><label>Languages (comma separated)</label><input id="p-languages" placeholder="English, Hindi"/></div>
+              <div class="form-group">
+                <label>Tone</label>
+                <select id="p-tone">
+                  <option value="PROFESSIONAL">Professional</option>
+                  <option value="FRIENDLY">Friendly</option>
+                  <option value="FORMAL">Formal</option>
+                  <option value="CASUAL">Casual</option>
+                  <option value="ENTHUSIASTIC">Enthusiastic</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:.5rem">
+              <label>Business Description</label>
+              <textarea id="p-description" rows="3" placeholder="Describe your business, what you do, and who you serve…"></textarea>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🤖 AI Configuration</h3>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>AI Provider (overrides global default)</label>
+                <select id="p-aiProvider">
+                  <option value="">Use Server Default (Gemini)</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="groq">Groq (Llama)</option>
+                </select>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="label">Use Emojis</div>
+                <div class="sublabel">Allow the AI to include emojis in replies</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="p-emojis"/><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="label">Allow General Conversation</div>
+                <div class="sublabel">Bot can discuss topics beyond your business (not recommended)</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="p-general"/><span class="slider"></span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📚 Knowledge Base</h3>
+            <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">
+              Paste any additional knowledge here — product details, service areas, team info, brand story, etc. The AI will use this before answering.
+            </p>
+            <textarea id="p-kb" rows="6" placeholder="e.g. We serve home-cooked tiffins across Indore. Our kitchen is FSSAI certified. We use locally sourced vegetables every day…"></textarea>
+          </div>
+
+          <div class="card">
+            <h3>🛠 Custom Instructions</h3>
+            <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">
+              Any specific instructions for the AI — e.g. "always upsell the combo plan", "always ask for the customer's area before confirming delivery", etc.
+            </p>
+            <textarea id="p-custom" rows="4" placeholder="e.g. Always ask for the customer's pin code before confirming delivery availability…"></textarea>
+          </div>
+
+          <div class="save-row">
+            <button class="btn btn-primary" onclick="saveProfile()">💾 Save Profile</button>
+          </div>
+        </div>
+
+        <!-- ── Services ── -->
+        <div class="section" id="section-services">
+          <div class="section-header">
+            <div>
+              <h2>Services / Products</h2>
+              <p>What your business offers. The AI will quote these exactly — never invent prices.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('service')">+ Add Service</button>
+          </div>
+          <div id="services-list"><div class="empty-state">No services added yet.</div></div>
+        </div>
+
+        <!-- ── FAQs ── -->
+        <div class="section" id="section-faqs">
+          <div class="section-header">
+            <div>
+              <h2>FAQs</h2>
+              <p>Common customer questions. The AI will answer from these first.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('faq')">+ Add FAQ</button>
+          </div>
+          <div id="faqs-list"><div class="empty-state">No FAQs added yet.</div></div>
+        </div>
+
+        <!-- ── Policies ── -->
+        <div class="section" id="section-policies">
+          <div class="section-header">
+            <div>
+              <h2>Business Policies</h2>
+              <p>Refund, cancellation, delivery, payment policies — stated clearly for the AI.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('policy')">+ Add Policy</button>
+          </div>
+          <div id="policies-list"><div class="empty-state">No policies added yet.</div></div>
+        </div>
+
+        <!-- ── WhatsApp Link ── -->
+        <div class="section" id="section-whatsapp">
+          <div class="section-header">
+            <div>
+              <h2>WhatsApp Connection</h2>
+              <p>Scan the QR code to link the assistant directly with your WhatsApp account (no Twilio required!).</p>
+            </div>
+          </div>
+          
+          <div style="max-width: 400px; margin: 2rem auto 0; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="card" style="text-align: center; padding: 2rem;">
+              <h3 style="margin-top:0">Link WhatsApp Account</h3>
+              <div id="qr-stage" style="aspect-ratio: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; margin: 1.5rem 0;">
+                <div id="qr-placeholder" style="font-family: monospace; font-size: 13px; color: var(--muted); padding: 20px;">
+                  waiting for gateway<span class="cursor"></span>
+                </div>
+              </div>
+              <div id="conn-meta" style="font-family: monospace; font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 1.5rem;"></div>
+              <button class="btn btn-primary btn-block" id="reconnect-btn" style="width: 100%;">Generate new QR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Preview Chat ── -->
+        <div class="section" id="section-preview">
+          <div class="section-header">
+            <div>
+              <h2>Preview Bot</h2>
+              <p>Chat with your AI assistant exactly as a WhatsApp customer would.</p>
+            </div>
+            <button class="chat-reset" onclick="resetChat()">🗑 Clear chat</button>
+          </div>
+          <div class="chat-shell">
+            <div class="chat-header">
+              <div class="avatar" id="chat-avatar">B</div>
+              <div>
+                <div class="name" id="chat-business-name">Your Business</div>
+                <div class="status">● Online</div>
+              </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+              <div class="msg bot">👋 Hi! I'm your AI assistant. Ask me anything about the business.</div>
+            </div>
+            <div class="chat-input-row">
+              <textarea id="chat-input" placeholder="Type a message…" rows="1"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+              <button class="chat-send" onclick="sendChat()">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 21L23 12 2 3v7l15 2-15 2z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Setup Guide ── -->
+        <div class="section" id="section-setup">
+          <div class="section-header">
+            <div><h2>Setup Guide</h2><p>How to go live with your WhatsApp AI assistant.</p></div>
+          </div>
+
+          <div class="card">
+            <h3>1️⃣ Configure Environment Variables</h3>
+            <p style="font-size:.85rem;color:var(--muted);margin-bottom:.8rem">
+              Set these in your <code style="color:var(--green)">application.properties</code> or as environment variables before starting the server:
+            </p>
+            <pre style="background:#0d1117;border-radius:8px;padding:1rem;font-size:.8rem;overflow-x:auto;color:#c9d1d9">
+# AI (choose one)
+ANTHROPIC_API_KEY=sk-ant-...
+AI_PROVIDER=anthropic
+
+# OR
+OPENAI_API_KEY=sk-...
+AI_PROVIDER=openai
+
+# Twilio WhatsApp
+TWILIO_ACCOUNT_SID=ACxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxx
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
+
+# Admin login
+ADMIN_EMAIL=admin@yourbusiness.com
+ADMIN_PASSWORD=your-secure-password
+
+# JWT
+JWT_SECRET=a-very-long-random-secret-string</pre>
+          </div>
+
+          <div class="card">
+            <h3>2️⃣ Build & Run the Spring Boot Backend</h3>
+            <pre style="background:#0d1117;border-radius:8px;padding:1rem;font-size:.8rem;overflow-x:auto;color:#c9d1d9">
+cd backend
+mvn clean package -DskipTests
+java -jar target/assistant-1.0.0.jar
+
+# Or with Maven wrapper:
+./mvnw spring-boot:run</pre>
+            <p style="font-size:.83rem;color:var(--muted);margin-top:.7rem">
+              The API runs on <strong style="color:var(--text)">http://localhost:8080</strong>. The H2 database console is at <code style="color:var(--green)">/h2-console</code>.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>3️⃣ Open the Admin Dashboard</h3>
+            <p style="font-size:.85rem;color:var(--muted)">
+              Open <code style="color:var(--green)">frontend/index.html</code> in your browser (or serve it from any static host).
+              The dashboard talks to the backend at <code style="color:var(--green)">http://localhost:8080</code> by default.
+              Change <code style="color:var(--green)">API_BASE</code> at the top of the &lt;script&gt; tag to match your deployed server.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>4️⃣ Configure the Twilio Webhook</h3>
+            <p style="font-size:.85rem;color:var(--muted)">
+              In your <a href="https://console.twilio.com" target="_blank">Twilio Console</a>, go to
+              <strong>Messaging → Senders → WhatsApp Sandbox</strong> and set:
+            </p>
+            <pre style="background:#0d1117;border-radius:8px;padding:1rem;font-size:.8rem;margin-top:.7rem;overflow-x:auto;color:#c9d1d9">
+Webhook URL (When a message comes in):
+https://YOUR-DOMAIN.com/api/webhook/whatsapp
+
+Method: HTTP POST</pre>
+            <p style="font-size:.83rem;color:var(--muted);margin-top:.7rem">
+              Use <a href="https://ngrok.com" target="_blank">ngrok</a> for local testing:
+              <code style="color:var(--green)">ngrok http 8080</code> → copy the HTTPS URL.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>5️⃣ Fill in Your Business Profile</h3>
+            <p style="font-size:.85rem;color:var(--muted)">
+              Go to <strong>Business Profile</strong> → fill all fields → <strong>Save</strong>.
+              Then add your <strong>Services</strong>, <strong>FAQs</strong>, and <strong>Policies</strong>.
+              Use <strong>Preview Bot</strong> to test the AI before going live.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>🗄 Database</h3>
+            <p style="font-size:.85rem;color:var(--muted)">
+              Default: <strong>H2 file-based</strong> — zero setup, data persists in <code style="color:var(--green)">./data/whatsappai.mv.db</code>.<br/>
+              For production: switch to <strong>MySQL</strong> by uncommenting the MySQL block in <code style="color:var(--green)">application.properties</code>.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>📡 API Reference</h3>
+            <div style="font-size:.83rem;font-family:monospace;line-height:2">
+              <span style="color:var(--green)">POST</span> /api/auth/login<br/>
+              <span style="color:var(--accent)">GET&nbsp;</span> /api/business<br/>
+              <span style="color:#f59e0b">PUT&nbsp;</span> /api/business<br/>
+              <span style="color:var(--accent)">GET&nbsp;</span> /api/faqs<br/>
+              <span style="color:var(--green)">POST</span> /api/faqs &nbsp;&nbsp;&nbsp;| <span style="color:#f59e0b">PUT</span> /api/faqs/{id} | <span style="color:var(--danger)">DELETE</span> /api/faqs/{id}<br/>
+              <span style="color:var(--accent)">GET&nbsp;</span> /api/services<br/>
+              <span style="color:var(--green)">POST</span> /api/services | <span style="color:#f59e0b">PUT</span> /api/services/{id} | <span style="color:var(--danger)">DELETE</span> /api/services/{id}<br/>
+              <span style="color:var(--accent)">GET&nbsp;</span> /api/policies<br/>
+              <span style="color:var(--green)">POST</span> /api/policies | <span style="color:#f59e0b">PUT</span> /api/policies/{id} | <span style="color:var(--danger)">DELETE</span> /api/policies/{id}<br/>
+              <span style="color:var(--green)">POST</span> /api/chat/preview<br/>
+              <span style="color:var(--green)">POST</span> /api/webhook/whatsapp <span style="color:var(--muted)">(Twilio endpoint)</span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+<!-- FAQ Modal -->
+<div class="modal-overlay" id="modal-faq">
+  <div class="modal">
+    <h3 id="faq-modal-title">Add FAQ</h3>
+    <input type="hidden" id="faq-id"/>
+    <div class="form-group"><label>Question</label><input id="faq-q" placeholder="What are your delivery charges?"/></div>
+    <div class="form-group"><label>Answer</label><textarea id="faq-a" rows="4" placeholder="Delivery is free within 5 km. Beyond that, ₹20 per km applies."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('faq')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFaq()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Service Modal -->
+<div class="modal-overlay" id="modal-service">
+  <div class="modal">
+    <h3 id="service-modal-title">Add Service</h3>
+    <input type="hidden" id="service-id"/>
+    <div class="grid-2">
+      <div class="form-group"><label>Name</label><input id="svc-name" placeholder="e.g. Monthly Tiffin Plan"/></div>
+      <div class="form-group"><label>Price</label><input id="svc-price" placeholder="e.g. ₹1,499/month"/></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="svc-desc" rows="3" placeholder="Includes 2 chapati, 1 sabzi, dal, rice, salad — delivered twice daily."></textarea></div>
+    <div class="toggle-row">
+      <div><div class="label">Currently Available</div></div>
+      <label class="switch"><input type="checkbox" id="svc-avail" checked/><span class="slider"></span></label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('service')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveService()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Policy Modal -->
+<div class="modal-overlay" id="modal-policy">
+  <div class="modal">
+    <h3 id="policy-modal-title">Add Policy</h3>
+    <input type="hidden" id="policy-id"/>
+    <div class="form-group">
+      <label>Policy Type</label>
+      <input id="pol-title" list="policy-types" placeholder="e.g. Refund Policy"/>
+      <datalist id="policy-types">
+        <option value="Refund Policy"/>
+        <option value="Cancellation Policy"/>
+        <option value="Delivery Policy"/>
+        <option value="Payment Policy"/>
+        <option value="Privacy Policy"/>
+      </datalist>
+    </div>
+    <div class="form-group"><label>Policy Content</label><textarea id="pol-content" rows="5" placeholder="Full refunds are issued within 24 hours of placing the order if cancelled before dispatch…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('policy')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePolicy()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"><span class="dot"></span><span id="toast-msg"></span></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// CONFIG — change this to your deployed backend URL
+// ════════════════════════════════════════════════════
+const API_BASE = 'http://localhost:8082';
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let token = localStorage.getItem('wa_token') || '';
+let businessId = localStorage.getItem('wa_businessId') || '';
+let userEmail = localStorage.getItem('wa_email') || '';
+let editingFaqId = null, editingServiceId = null, editingPolicyId = null;
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+window.onload = () => {
+  if (token) {
+    showShell();
+    loadAll();
+  }
+};
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pass})
+    });
+    if (!res.ok) { errEl.style.display = 'block'; return; }
+    const data = await res.json();
+    token = data.token; businessId = data.businessId; userEmail = data.email;
+    localStorage.setItem('wa_token', token);
+    localStorage.setItem('wa_businessId', businessId);
+    localStorage.setItem('wa_email', userEmail);
+    showShell(); loadAll();
+  } catch(e) {
+    errEl.textContent = 'Cannot connect to server. Is it running?';
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  token = ''; businessId = ''; userEmail = '';
+  localStorage.clear();
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-shell').style.display = 'none';
+}
+
+function showShell() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-shell').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = userEmail;
+}
+
+// ════════════════════════════════════════════════════
+// API HELPER
+// ════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {'Authorization': `Bearer ${token}`, 'Content-Type':'application/json'}
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${API_BASE}${path}`, opts);
+  if (res.status === 401) { doLogout(); return null; }
+  if (res.status === 204) return null;
+  return res.json().catch(() => null);
+}
+
+// ════════════════════════════════════════════════════
+// LOAD ALL
+// ════════════════════════════════════════════════════
+async function loadAll() {
+  await loadProfile();
+  await loadFaqs();
+  await loadServices();
+  await loadPolicies();
+}
+
+// ════════════════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════════════════
+async function loadProfile() {
+  const d = await api('GET', '/api/business');
+  if (!d) return;
+  document.getElementById('p-name').value        = d.businessName    || '';
+  document.getElementById('p-industry').value    = d.industry        || '';
+  document.getElementById('p-contact').value     = d.contactNumber   || '';
+  document.getElementById('p-website').value     = d.website         || '';
+  document.getElementById('p-waNumber').value    = d.whatsappNumber  || '';
+  document.getElementById('p-address').value     = d.address         || '';
+  document.getElementById('p-hours').value       = d.workingHours    || '';
+  document.getElementById('p-timezone').value    = d.timezone        || '';
+  document.getElementById('p-languages').value   = d.languages       || '';
+  document.getElementById('p-tone').value        = d.tone            || 'PROFESSIONAL';
+  document.getElementById('p-description').value = d.description     || '';
+  document.getElementById('p-aiProvider').value  = d.aiProvider      || '';
+  document.getElementById('p-kb').value          = d.knowledgeBase   || '';
+  document.getElementById('p-custom').value      = d.customInstructions || '';
+  document.getElementById('p-emojis').checked    = d.useEmojis       || false;
+  document.getElementById('p-general').checked   = d.allowGeneralConversation || false;
+
+  // Update chat header
+  const name = d.businessName || 'Your Business';
+  document.getElementById('chat-business-name').textContent = name;
+  document.getElementById('chat-avatar').textContent = name.charAt(0).toUpperCase();
+}
+
+async function saveProfile() {
+  const body = {
+    businessName:           document.getElementById('p-name').value,
+    industry:               document.getElementById('p-industry').value,
+    contactNumber:          document.getElementById('p-contact').value,
+    website:                document.getElementById('p-website').value,
+    whatsappNumber:         document.getElementById('p-waNumber').value,
+    address:                document.getElementById('p-address').value,
+    workingHours:           document.getElementById('p-hours').value,
+    timezone:               document.getElementById('p-timezone').value,
+    languages:              document.getElementById('p-languages').value,
+    tone:                   document.getElementById('p-tone').value,
+    description:            document.getElementById('p-description').value,
+    aiProvider:             document.getElementById('p-aiProvider').value,
+    knowledgeBase:          document.getElementById('p-kb').value,
+    customInstructions:     document.getElementById('p-custom').value,
+    useEmojis:              document.getElementById('p-emojis').checked,
+    allowGeneralConversation: document.getElementById('p-general').checked,
+    active: true
+  };
+  const res = await api('PUT', '/api/business', body);
+  if (res) toast('Profile saved ✓', 'success');
+}
+
+// ════════════════════════════════════════════════════
+// FAQs
+// ════════════════════════════════════════════════════
+let faqs = [];
+async function loadFaqs() {
+  faqs = await api('GET', '/api/faqs') || [];
+  renderFaqs();
+}
+
+function renderFaqs() {
+  const el = document.getElementById('faqs-list');
+  if (!faqs.length) { el.innerHTML = '<div class="empty-state">No FAQs yet. Add your first one!</div>'; return; }
+  el.innerHTML = faqs.map(f => `
+    <div class="list-item">
+      <div class="item-body">
+        <div class="item-title">Q: ${esc(f.question)}</div>
+        <div class="item-sub">A: ${esc(f.answer)}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline btn-sm" onclick="editFaq('${f.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm"  onclick="deleteFaq('${f.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function openModal(type, id) {
+  if (type === 'faq') {
+    editingFaqId = id || null;
+    document.getElementById('faq-modal-title').textContent = id ? 'Edit FAQ' : 'Add FAQ';
+    if (!id) { document.getElementById('faq-q').value = ''; document.getElementById('faq-a').value = ''; }
+    document.getElementById('modal-faq').classList.add('open');
+  } else if (type === 'service') {
+    editingServiceId = id || null;
+    document.getElementById('service-modal-title').textContent = id ? 'Edit Service' : 'Add Service';
+    if (!id) {
+      document.getElementById('svc-name').value = '';
+      document.getElementById('svc-price').value = '';
+      document.getElementById('svc-desc').value = '';
+      document.getElementById('svc-avail').checked = true;
+    }
+    document.getElementById('modal-service').classList.add('open');
+  } else if (type === 'policy') {
+    editingPolicyId = id || null;
+    document.getElementById('policy-modal-title').textContent = id ? 'Edit Policy' : 'Add Policy';
+    if (!id) { document.getElementById('pol-title').value = ''; document.getElementById('pol-content').value = ''; }
+    document.getElementById('modal-policy').classList.add('open');
+  }
+}
+
+function closeModal(type) {
+  document.getElementById(`modal-${type}`).classList.remove('open');
+}
+
+function editFaq(id) {
+  const f = faqs.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('faq-q').value = f.question;
+  document.getElementById('faq-a').value = f.answer;
+  openModal('faq', id);
+}
+
+async function saveFaq() {
+  const body = { question: document.getElementById('faq-q').value, answer: document.getElementById('faq-a').value };
+  if (editingFaqId) { await api('PUT', `/api/faqs/${editingFaqId}`, body); }
+  else { await api('POST', '/api/faqs', body); }
+  closeModal('faq'); await loadFaqs(); toast('FAQ saved ✓', 'success');
+}
+
+async function deleteFaq(id) {
+  if (!confirm('Delete this FAQ?')) return;
+  await api('DELETE', `/api/faqs/${id}`);
+  await loadFaqs(); toast('FAQ deleted', 'success');
+}
+
+// ════════════════════════════════════════════════════
+// SERVICES
+// ════════════════════════════════════════════════════
+let services = [];
+async function loadServices() {
+  services = await api('GET', '/api/services') || [];
+  renderServices();
+}
+
+function renderServices() {
+  const el = document.getElementById('services-list');
+  if (!services.length) { el.innerHTML = '<div class="empty-state">No services yet. Add your first one!</div>'; return; }
+  el.innerHTML = services.map(s => `
+    <div class="list-item">
+      <div class="item-body">
+        <div class="item-title">${esc(s.name)} ${!s.available ? '<span style="color:var(--danger);font-size:.75rem">(unavailable)</span>' : ''}</div>
+        ${s.price ? `<span class="item-price">${esc(s.price)}</span>` : ''}
+        ${s.description ? `<div class="item-sub">${esc(s.description)}</div>` : ''}
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline btn-sm" onclick="editService('${s.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm"  onclick="deleteService('${s.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function editService(id) {
+  const s = services.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('svc-name').value   = s.name;
+  document.getElementById('svc-price').value  = s.price || '';
+  document.getElementById('svc-desc').value   = s.description || '';
+  document.getElementById('svc-avail').checked = s.available;
+  openModal('service', id);
+}
+
+async function saveService() {
+  const body = {
+    name:        document.getElementById('svc-name').value,
+    price:       document.getElementById('svc-price').value,
+    description: document.getElementById('svc-desc').value,
+    available:   document.getElementById('svc-avail').checked
+  };
+  if (editingServiceId) { await api('PUT', `/api/services/${editingServiceId}`, body); }
+  else { await api('POST', '/api/services', body); }
+  closeModal('service'); await loadServices(); toast('Service saved ✓', 'success');
+}
+
+async function deleteService(id) {
+  if (!confirm('Delete this service?')) return;
+  await api('DELETE', `/api/services/${id}`);
+  await loadServices(); toast('Service deleted', 'success');
+}
+
+// ════════════════════════════════════════════════════
+// POLICIES
+// ════════════════════════════════════════════════════
+let policies = [];
+async function loadPolicies() {
+  policies = await api('GET', '/api/policies') || [];
+  renderPolicies();
+}
+
+function renderPolicies() {
+  const el = document.getElementById('policies-list');
+  if (!policies.length) { el.innerHTML = '<div class="empty-state">No policies yet.</div>'; return; }
+  el.innerHTML = policies.map(p => `
+    <div class="list-item">
+      <div class="item-body">
+        <div class="item-title">${esc(p.title)}</div>
+        <div class="item-sub">${esc(p.content)}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline btn-sm" onclick="editPolicy('${p.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm"  onclick="deletePolicy('${p.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function editPolicy(id) {
+  const p = policies.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pol-title').value   = p.title;
+  document.getElementById('pol-content').value = p.content;
+  openModal('policy', id);
+}
+
+async function savePolicy() {
+  const body = { title: document.getElementById('pol-title').value, content: document.getElementById('pol-content').value };
+  if (editingPolicyId) { await api('PUT', `/api/policies/${editingPolicyId}`, body); }
+  else { await api('POST', '/api/policies', body); }
+  closeModal('policy'); await loadPolicies(); toast('Policy saved ✓', 'success');
+}
+
+async function deletePolicy(id) {
+  if (!confirm('Delete this policy?')) return;
+  await api('DELETE', `/api/policies/${id}`);
+  await loadPolicies(); toast('Policy deleted', 'success');
+}
+
+// ════════════════════════════════════════════════════
+// CHAT PREVIEW
+// ════════════════════════════════════════════════════
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendMsg(msg, 'user');
+  const typingEl = appendMsg('typing…', 'bot typing');
+
+  try {
+    const res = await api('POST', '/api/chat/preview', {
+      message: msg, customerNumber: 'preview-session'
+    });
+    typingEl.remove();
+    appendMsg(res?.reply || '(no response)', 'bot');
+  } catch(e) {
+    typingEl.remove();
+    appendMsg('Error connecting to backend.', 'bot');
+  }
+}
+
+function appendMsg(text, cls) {
+  const el = document.createElement('div');
+  el.className = `msg ${cls}`;
+  el.textContent = text;
+  const container = document.getElementById('chat-messages');
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+function resetChat() {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '<div class="msg bot">👋 Hi! I\'m your AI assistant. Ask me anything about the business.</div>';
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const targetSec = document.getElementById(`section-${name}`);
+  if (targetSec) targetSec.classList.add('active');
+  
+  if (window.event && window.event.currentTarget) {
+    window.event.currentTarget.classList.add('active');
+  } else {
+    const btn = Array.from(document.querySelectorAll('.nav-item')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${name}'`));
+    if (btn) btn.classList.add('active');
+  }
+  
+  if (name === 'whatsapp') {
+    connectGateway();
+  }
+}
+
+// ════════════════════════════════════════════════════
+// WHATSAPP QR GATEWAY INTEGRATION
+// ════════════════════════════════════════════════════
+const GATEWAY_BASE = 'http://localhost:8083';
+let gatewaySocket = null;
+
+function connectGateway() {
+  const qrStage = document.getElementById('qr-stage');
+  const connMeta = document.getElementById('conn-meta');
+  const reconnectBtn = document.getElementById('reconnect-btn');
+
+  if (typeof io === 'undefined') {
+    connMeta.textContent = 'Loading connection interface...';
+    
+    // Try to load locally from the gateway first
+    const script = document.createElement('script');
+    script.src = `${GATEWAY_BASE}/socket.io/socket.io.js`;
+    script.onload = () => {
+      connMeta.textContent = 'Connection interface loaded. Connecting...';
+      connectGateway();
+    };
+    script.onerror = () => {
+      // Fallback to CDN
+      const cdnScript = document.createElement('script');
+      cdnScript.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
+      cdnScript.onload = () => {
+        connMeta.textContent = 'Connection interface (CDN) loaded. Connecting...';
+        connectGateway();
+      };
+      cdnScript.onerror = () => {
+        connMeta.textContent = 'Failed to load connection interface. Please make sure the WhatsApp gateway is running on port 8083.';
+      };
+      document.head.appendChild(cdnScript);
+    };
+    document.head.appendChild(script);
+    return;
+  }
+
+  if (gatewaySocket) return; // already connected
+  
+  gatewaySocket = io(GATEWAY_BASE, {
+    transports: ['websocket', 'polling']
+  });
+
+  gatewaySocket.on('state', (state) => {
+    if (state.status === 'connected') {
+      qrStage.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--green);">
+          <div style="width: 14px; height: 14px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(37,211,102,0.6);"></div>
+          <div style="font-family: monospace; font-size: 14px; color: var(--text);">Connected: +${state.connectedNumber}</div>
+        </div>`;
+      connMeta.textContent = 'WhatsApp Web session is active and linked.';
+      reconnectBtn.textContent = 'Disconnect / Reset Session';
+      reconnectBtn.className = 'btn btn-outline btn-block';
+      reconnectBtn.disabled = false;
+    } else if (state.status === 'qr' && state.qrDataUrl) {
+      qrStage.innerHTML = `<img src="${state.qrDataUrl}" alt="WhatsApp QR code" style="width:100%; height:100%; padding:10px; background:#fff; object-fit:contain;">`;
+      connMeta.textContent = 'Open WhatsApp → Linked devices → Link a device.';
+      reconnectBtn.textContent = 'Generate new QR';
+      reconnectBtn.className = 'btn btn-primary btn-block';
+      reconnectBtn.disabled = false;
+    } else if (state.status === 'initializing') {
+      qrStage.innerHTML = `<div class="qr-placeholder" style="color:var(--muted)">Initializing Puppeteer browser...<span class="cursor"></span></div>`;
+      connMeta.textContent = 'Starting Chromium to open WhatsApp Web...';
+      reconnectBtn.textContent = 'Waiting...';
+      reconnectBtn.disabled = true;
+    } else {
+      qrStage.innerHTML = `<div class="qr-placeholder" style="color:var(--muted)">Disconnected. Click button to scan QR.<span class="cursor"></span></div>`;
+      connMeta.textContent = 'Session ended.';
+      reconnectBtn.textContent = 'Start Link Session';
+      reconnectBtn.className = 'btn btn-primary btn-block';
+      reconnectBtn.disabled = false;
+    }
+  });
+
+  reconnectBtn.onclick = async () => {
+    reconnectBtn.disabled = true;
+    reconnectBtn.textContent = 'Requesting...';
+    try {
+      const res = await fetch(`${GATEWAY_BASE}/api/whatsapp/reconnect`, { method: 'POST' });
+      if (!res.ok) throw new Error();
+      toast('Requested WhatsApp gateway restart.', 'success');
+    } catch(err) {
+      toast('Could not reach WhatsApp Gateway on port 8083.', 'error');
+    } finally {
+      reconnectBtn.disabled = false;
+    }
+  };
+}
+
+// ════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// Enter key for login
+document.getElementById('login-password')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

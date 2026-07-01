@@ -1,0 +1,27 @@
+# Maven / Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.wwebjs_auth/
+.wwebjs_cache/
+whatsapp-gateway/session/
+session/
+
+# Environment / Data / Logs
+.env
+data/
+*.log
+
+# OS / IDE
+.DS_Store
+.idea/
+*.iml
+.vscode/
